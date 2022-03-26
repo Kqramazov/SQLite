@@ -20,7 +20,18 @@ int select_callback(void *NotUsed, int n_column, char **column_value, char **col
     printf( "-- -- -- -- -- -- -- -- -- \n");
     return 0;
 }
-int main(){
+int delete_callback(void *NotUsed, int n_column, char **column_value, char **column_name){//buggy
+    int i;//这个函数有问题：成功删除了ID=1的结果，但影响到了逻辑上先于它执行的输出结果
+    printf("现在执行的是手写删除元素的回调函数结果，包含 %d 个字段:\n", n_column);
+    for (i = 0; i < n_column; i++)
+    {
+        printf("字段名: %s ß > 字段值: %s \n", column_name[i], column_value[i]);
+    }
+    printf("-- -- -- -- -- -- -- -- -- \n");
+    return 0;
+}
+int main()
+{
     sqlite3 *db = NULL;
     int result=sqlite3_open("first.db", &db);//要传指针的地址
     if(result!=SQLITE_OK){
@@ -76,6 +87,21 @@ int main(){
         printf("get_table失败，错误码: %d，错误原因: %s \n", result, errmsg);
     }
     sqlite3_free_table( dbResult );
+
+    int result_delete = sqlite3_exec(db, "delete from MyTable_1 where ID = 1", delete_callback, NULL, &errmsg);
+    if (result_delete != SQLITE_OK)
+    {
+        printf("delete失败，错误码: %d，错误原因: %s \n", result, errmsg);
+    }
+
+    int result_drop = sqlite3_exec(db, "drop table MyTable_1", NULL, NULL, &errmsg);
+    if (result_drop != SQLITE_OK)
+    {
+        printf("drop失败，错误码: %d，错误原因: %s \n", result, errmsg);
+    }
+    else{
+        printf("程序生成的表被删除，现在的文件是空的。\n");
+    }
     sqlite3_close(db);
     return 0;
 }
